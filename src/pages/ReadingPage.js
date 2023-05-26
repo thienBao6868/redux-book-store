@@ -2,66 +2,49 @@ import React, { useState, useEffect } from "react";
 import { Container, Button, Box, Card, Stack, CardMedia, CardActionArea, Typography, CardContent } from "@mui/material";
 import { ClipLoader } from "react-spinners";
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
-import api from "../apiService";
+import { useDispatch,useSelector } from "react-redux";
+import { getFavorites, removeBook } from "../books/bookSlice";
 
 const BACKEND_API = process.env.REACT_APP_BACKEND_API;
 
 const ReadingPage = () => {
-  const [books, setBooks] = useState([]);
-  const [loading, setLoading] = useState(false);
+  // dispatch, select 
+  const dispatch = useDispatch()
+  const books = useSelector(state => state.book.favorites)
+  const status = useSelector(state => state.book.status)
+  // state set bookId
   const [removedBookId, setRemovedBookId] = useState("");
+  // Navigate
   const navigate = useNavigate()
-
   const handleClickBook = (bookId) => {
     navigate(`/books/${bookId}`);
   };
-
-  const removeBook = (bookId) => {
+  // function choose Book to remove
+  const chooseBook = (bookId) => {
     setRemovedBookId(bookId);
   };
-
+ 
   useEffect(() => {
     if (removedBookId) return;
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const res = await api.get(`/favorites`);
-        setBooks(res.data);
-      } catch (error) {
-        toast(error.message);
-      }
-      setLoading(false);
-    };
-    fetchData();
-  }, [removedBookId]);
-
+    dispatch(getFavorites())
+    
+  }, [dispatch,removedBookId])
   useEffect(() => {
     if (!removedBookId) return;
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        await api.delete(`/favorites/${removedBookId}`);
-        toast.success("The book has been removed");
-        setRemovedBookId("");
-      } catch (error) {
-        toast(error.message);
-      }
-      setLoading(false);
-    };
-    fetchData();
-  }, [removedBookId]);
+  dispatch(removeBook(removedBookId));
+  setRemovedBookId("")
+  }, [removedBookId,dispatch]);
 
   return (
     <Container>
       <Typography variant="h3" sx={{ textAlign: "center" }} m={3}>Book Store</Typography>
-      {loading ? (
+      {status ? (
         <Box sx={{ textAlign: "center", color: "primary.main" }} >
           <ClipLoader color="inherit" size={150} loading={true} />
         </Box>
       ) : (
         <Stack direction="row" spacing={2} justifyContent="space-around" flexWrap={"wrap"}>
-          {books.map((book) => (
+          { books.map((book) => (
             <Card
               key={book.id}
               sx={{
@@ -90,7 +73,7 @@ const ReadingPage = () => {
                       padding: "0", minWidth: "1.5rem"
                     }}
                     size="small"
-                    onClick={() => removeBook(book.id)}
+                   onClick={()=>chooseBook(book.id)}
                   >
                     &times;
                   </Button>
